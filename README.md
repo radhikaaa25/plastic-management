@@ -141,7 +141,6 @@ DATABASE_URL=postgresql://user:password@localhost/dbname
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
@@ -150,9 +149,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Font Awesome for beautiful icons
 - All contributors and users of this project
 
-## 📞 Support
 
-If you have any questions or need help, please open an issue on GitHub.
 
 ---
 
