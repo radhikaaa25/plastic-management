@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Plastic Project</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+  <h2>Login / Register</h2>
+  <form id="loginForm">
+    <label>Username:</label><br>
+    <input type="text" id="username" required><br><br>
+    <label>Password:</label><br>
+    <input type="password" id="password" required><br><br>
+    <button type="submit">Login</button>
+  </form>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      // New API endpoint
+      const res = await fetch("/api/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem("userId", data.userId);
+        //redirect to the home page
+        window.location.href = "/home/";
+      } else {
+        alert("Login failed: " + data.message);
+      }
+    });
+  </script>
+</body>
+</html>

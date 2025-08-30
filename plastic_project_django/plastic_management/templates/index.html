@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Plastic Project</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+  <h1>Plastic Waste Exchanger</h1>
+
+  <button id="depositBtn">Deposit Bottle</button>
+  <button id="balanceBtn">Check Balance</button>
+  <button id="logoutBtn">Logout</button>
+
+  <div id="output"></div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      window.location.href = "/"; // Redirect to login page
+    }
+
+    document.getElementById("depositBtn").addEventListener("click", async () => {
+      // New API endpoint
+      const res = await fetch(`/api/deposit/?userId=${userId}`);
+      const text = await res.text();
+      document.getElementById("output").innerText = text;
+    });
+
+    document.getElementById("balanceBtn").addEventListener("click", async () => {
+      // New API endpoint
+      const res = await fetch(`/api/balance/?userId=${userId}`);
+      const text = await res.text();
+      document.getElementById("output").innerText = text;
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("userId");
+      window.location.href = "/"; // Redirect to login page
+    });
+  </script>
+</body>
+</html>
