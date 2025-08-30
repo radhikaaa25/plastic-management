@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Plastic Waste Exchanger</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container fade-in">
+    <div class="header-section">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <i class="fas fa-recycle" style="font-size: 2.5rem; color: #667eea;"></i>
+          <h1 style="margin: 0;">Plastic Waste Exchanger</h1>
+        </div>
+        <button id="logoutBtn" class="btn btn-danger" style="margin: 0;">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard">
+      <div class="stats-card slide-up">
+        <div class="stats-number" id="balanceDisplay">0</div>
+        <div class="stats-label">Total Points</div>
+      </div>
+
+      <div class="stats-card slide-up">
+        <div class="stats-number" id="bottlesDisplay">0</div>
+        <div class="stats-label">Bottles Recycled</div>
+      </div>
+
+      <div class="stats-card slide-up">
+        <div class="stats-number" id="joinedDate">-</div>
+        <div class="stats-label">Member Since</div>
+      </div>
+    </div>
+
+    <div class="action-buttons" style="margin-top: 30px;">
+      <button id="qrScannerBtn" class="btn btn-success">
+        <i class="fas fa-qrcode"></i> Scan QR Code
+      </button>
+      <button id="depositBtn" class="btn btn-primary">
+        <i class="fas fa-plus-circle"></i> Manual Deposit
+      </button>
+      <button id="refreshBtn" class="btn btn-info">
+        <i class="fas fa-refresh"></i> Refresh Stats
+      </button>
+    </div>
+
+    <div id="output"></div>
+
+    <div class="info-section" style="margin-top: 40px; text-align: left;">
+      <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">
+        <i class="fas fa-info-circle"></i> How It Works
+      </h3>
+      <div style="display: grid; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">1</div>
+          <span>Scan the QR code on your plastic bottle using the QR scanner</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+          <span>Each bottle earns you 10 points automatically</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+          <span>Track your recycling progress and environmental impact</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+          <span>Use manual deposit as a backup option</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      window.location.href = "/";
+    }
+
+    // Load initial data
+    loadStats();
+
+    document.getElementById("qrScannerBtn").addEventListener("click", () => {
+      window.location.href = "/qr-scanner/";
+    });
+
+    document.getElementById("depositBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("depositBtn");
+      const originalText = btn.innerHTML;
+      
+      // Show loading state
+      btn.innerHTML = '<div class="loading"></div> Processing...';
+      btn.disabled = true;
+      
+      try {
+        const res = await fetch(`/api/deposit/?userId=${userId}`);
+        const text = await res.text();
+        showMessage(text, "success");
+        
+        // Refresh data
+        await loadStats();
+      } catch (error) {
+        showMessage("Error processing deposit. Please try again.", "error");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      const btn = document.getElementById("refreshBtn");
+      const originalText = btn.innerHTML;
+      
+      // Show loading state
+      btn.innerHTML = '<div class="loading"></div> Refreshing...';
+      btn.disabled = true;
+      
+      try {
+        await loadStats();
+        showMessage("Stats refreshed successfully!", "success");
+      } catch (error) {
+        showMessage("Error refreshing stats. Please try again.", "error");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      localStorage.removeItem("userId");
+      showMessage("Logging out...", "success");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
+    });
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`/api/stats/?userId=${userId}`);
+        const data = await res.json();
+        
+        if (data.error) {
+          console.error("Error loading stats:", data.error);
+          return;
+        }
+        
+        document.getElementById("balanceDisplay").textContent = data.coins;
+        document.getElementById("bottlesDisplay").textContent = data.totalBottles;
+        document.getElementById("joinedDate").textContent = data.joinedDate;
+      } catch (error) {
+        console.error("Error loading stats:", error);
+      }
+    }
+
+    function showMessage(text, type) {
+      const outputDiv = document.getElementById("output");
+      outputDiv.textContent = text;
+      outputDiv.className = `message ${type}`;
+      outputDiv.style.display = 'block';
+      
+      // Auto-hide success messages after 3 seconds
+      if (type === 'success') {
+        setTimeout(() => {
+          outputDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // Add some interactive effects
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-3px) scale(1.05)';
+      });
+      
+      btn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+
+    // Add pulse animation to stats cards
+    document.querySelectorAll('.stats-card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.animation = 'pulse 0.6s ease-in-out';
+      });
+      
+      card.addEventListener('animationend', function() {
+        this.style.animation = '';
+      });
+    });
+
+    // Check for URL parameters (in case user comes back from QR scanner)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('scanned') === 'true') {
+      showMessage("QR code scanned successfully! Check your updated stats.", "success");
+      loadStats();
+    }
+  </script>
+
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</body>
+</html>

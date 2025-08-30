@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Plastic Waste Exchanger</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container fade-in">
+    <div class="logo-section">
+      <i class="fas fa-recycle" style="font-size: 3rem; color: #667eea; margin-bottom: 20px;"></i>
+      <h1>Plastic Waste Exchanger</h1>
+      <p style="color: #666; margin-bottom: 30px; font-size: 1.1rem;">Recycle plastic, earn rewards</p>
+    </div>
+
+    <form id="loginForm" class="slide-up">
+      <div class="form-group">
+        <label for="username">
+          <i class="fas fa-user"></i> Username
+        </label>
+        <input type="text" id="username" required placeholder="Enter your username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">
+          <i class="fas fa-lock"></i> Password
+        </label>
+        <input type="password" id="password" required placeholder="Enter your password">
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-sign-in-alt"></i> Login / Register
+      </button>
+    </form>
+
+    <div id="message" style="display: none;"></div>
+
+    <div class="features" style="margin-top: 40px; text-align: left;">
+      <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">
+        <i class="fas fa-star"></i> Why Choose Us?
+      </h3>
+      <div style="display: grid; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-leaf" style="color: #56ab2f; font-size: 1.2rem;"></i>
+          <span>Help the environment by recycling plastic</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-coins" style="color: #f39c12; font-size: 1.2rem;"></i>
+          <span>Earn rewards for every bottle deposited</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-chart-line" style="color: #667eea; font-size: 1.2rem;"></i>
+          <span>Track your recycling progress</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      const messageDiv = document.getElementById("message");
+      
+      // Show loading state
+      submitBtn.innerHTML = '<div class="loading"></div> Processing...';
+      submitBtn.disabled = true;
+      messageDiv.style.display = 'none';
+      
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch("/api/login/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem("userId", data.userId);
+          showMessage("Login successful! Redirecting...", "success");
+          setTimeout(() => {
+            window.location.href = "/home/";
+          }, 1000);
+        } else {
+          showMessage("Login failed: " + data.message, "error");
+        }
+      } catch (error) {
+        showMessage("Network error. Please try again.", "error");
+      } finally {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    function showMessage(text, type) {
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+    }
+
+    // Add some interactive effects
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.style.transform = 'scale(1.02)';
+      });
+      
+      input.addEventListener('blur', function() {
+        this.parentElement.style.transform = 'scale(1)';
+      });
+    });
+  </script>
+</body>
+</html>

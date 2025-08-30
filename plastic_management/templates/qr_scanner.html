@@ -1,0 +1,209 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Scanner | Plastic Waste Exchanger</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <div class="container fade-in">
+    <div class="header-section">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <i class="fas fa-qrcode" style="font-size: 2.5rem; color: #667eea;"></i>
+          <h1 style="margin: 0;">QR Code Scanner</h1>
+        </div>
+        <button id="backBtn" class="btn btn-primary" style="margin: 0;">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </button>
+      </div>
+    </div>
+
+    <div class="scanner-section slide-up">
+      <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+      <div id="qr-reader-results"></div>
+    </div>
+
+    <div class="manual-input-section slide-up" style="margin-top: 30px;">
+      <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">
+        <i class="fas fa-keyboard"></i> Manual QR Code Entry
+      </h3>
+      <div class="form-group">
+        <label for="manualQrCode">
+          <i class="fas fa-barcode"></i> QR Code
+        </label>
+        <input type="text" id="manualQrCode" placeholder="Enter QR code manually">
+      </div>
+      <button id="manualSubmitBtn" class="btn btn-success">
+        <i class="fas fa-check"></i> Submit QR Code
+      </button>
+    </div>
+
+    <div id="message" style="display: none;"></div>
+
+    <div class="instructions" style="margin-top: 40px; text-align: left;">
+      <h3 style="color: #667eea; margin-bottom: 20px; text-align: center;">
+        <i class="fas fa-info-circle"></i> How to Use
+      </h3>
+      <div style="display: grid; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">1</div>
+          <span>Allow camera access when prompted</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">2</div>
+          <span>Point your camera at the QR code on the bottle</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">3</div>
+          <span>Automatically earn 10 points per bottle deposited</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 30px; height: 30px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">4</div>
+          <span>Or manually enter the QR code if scanning fails</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      window.location.href = "/";
+    }
+
+    let html5QrcodeScanner = null;
+
+    function onScanSuccess(decodedText, decodedResult) {
+      // Stop scanning after successful scan
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear();
+      }
+      
+      // Process the QR code
+      processQRCode(decodedText);
+    }
+
+    function onScanFailure(error) {
+      // Handle scan failure, ignore
+    }
+
+    function processQRCode(qrCode) {
+      const messageDiv = document.getElementById("message");
+      messageDiv.innerHTML = '<div class="loading"></div> Processing QR code...';
+      messageDiv.className = 'message';
+      messageDiv.style.display = 'block';
+
+      fetch('/api/qr-scan/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          qrCode: qrCode,
+          userId: userId
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showMessage(data.message, 'success');
+          // Restart scanner after successful scan
+          setTimeout(() => {
+            startScanner();
+          }, 2000);
+        } else {
+          showMessage(data.message, 'error');
+          // Restart scanner after error
+          setTimeout(() => {
+            startScanner();
+          }, 2000);
+        }
+      })
+      .catch(error => {
+        showMessage('Network error. Please try again.', 'error');
+        // Restart scanner after error
+        setTimeout(() => {
+          startScanner();
+        }, 2000);
+      });
+    }
+
+    function startScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear();
+      }
+
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
+        false
+      );
+      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    // Manual QR code submission
+    document.getElementById("manualSubmitBtn").addEventListener("click", () => {
+      const qrCode = document.getElementById("manualQrCode").value.trim();
+      if (qrCode) {
+        processQRCode(qrCode);
+        document.getElementById("manualQrCode").value = '';
+      } else {
+        showMessage("Please enter a QR code", "error");
+      }
+    });
+
+    // Enter key for manual input
+    document.getElementById("manualQrCode").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("manualSubmitBtn").click();
+      }
+    });
+
+    // Back button
+    document.getElementById("backBtn").addEventListener("click", () => {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear();
+      }
+      window.location.href = "/home/";
+    });
+
+    function showMessage(text, type) {
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          messageDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // Start scanner when page loads
+    window.addEventListener('load', () => {
+      startScanner();
+    });
+
+    // Handle page visibility change
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (html5QrcodeScanner) {
+          html5QrcodeScanner.clear();
+        }
+      } else {
+        startScanner();
+      }
+    });
+  </script>
+</body>
+</html> 
